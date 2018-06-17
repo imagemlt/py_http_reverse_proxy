@@ -105,7 +105,7 @@ def handle_request(conn,addr,config):
                     if recived_size>=cli_size:
                         header_recived=False 
                 
-            print "recv:"+data
+            #print "recv:"+data
             connserver.sendall(data)
             if(header_recived):
                 continue
