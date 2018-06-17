@@ -61,7 +61,7 @@ def parse_server_header(header_chunk):
 def handle_request(conn,addr,config):
     try:
         choice=random.randint(0,len(config['remotes'])-1)
-        print config['remotes'],choice
+        #print config['remotes'],choice
         print "recived request from %s:%s"%(addr[0],addr[1])
         connserver=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
         connserver.connect((config['remotes'][choice]["remote_host"],config["remotes"][choice]['remote_port']))
@@ -106,22 +106,15 @@ def handle_request(conn,addr,config):
                         header_recived=False 
                 
             print "recv:"+data
-            connserver.send(data)
+            connserver.sendall(data)
             if(header_recived):
                 continue
-            print "2"
             data=connserver.recv(20480)
             if('\r\n' not in data):
                 data+=connserver.recv(20480)
-            print len(data),data
-            print "3"
             message=data.split('\r\n\r\n')
-            print message
-            print "4"
             responce_info,responce_headers=parse_server_header(message[0])
-            print "5"
             res_chunked=False
-            print "6"
             res_size=0
             res_recived_size=0
             has_length=True
@@ -144,12 +137,12 @@ def handle_request(conn,addr,config):
                 else:
                     if not len(data):
                         break
-                conn.send(data)
+                conn.sendall(data)
                 data=connserver.recv(20480)
                 res_recived_size+=len(data)
                 #print res_recived_size
             #data=connserver.recv(20480)
-            conn.send(data)
+            conn.sendall(data)
             if not responce_headers.has_key('connection') or responce_headers['connection']=='close':
                 #print "shutdown"
                 conn.shutdown(socket.SHUT_WR)
