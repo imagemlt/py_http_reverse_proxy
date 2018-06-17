@@ -29,8 +29,8 @@ def server(config):
        else:
            pids.append(pid)
     if(isMaster):
-        print "I am master"
-        print pids
+        print "[+]master process loaded"
+        print "running pids",pids
     while True:
             cli,addr=s.accept()
             gevent.spawn(handle_request,cli,addr,config)
@@ -66,21 +66,25 @@ def handle_request(conn,addr,config):
         cli_chunked=False 
         while True:
             data=conn.recv(1024)
-            if not data:
+            if not len(data):
+                #print "shutdown 1"
                 conn.shutdown(socket.SHUT_WR)
+            #print data
             if not header_recived:
-                cliheader=data.split('\r\n\r\n')
+                cliheader=data.split('\r\n\r\n',1)
                 if(len(cliheader)!=2):
                     break
                 reqinfo,reqheaders=parse_client_header(cliheader[0])
-                print reqinfo
+                print "[+]client %s:%s -> %s"%(addr[0],addr[1],cliheader[0].split('\r\n')[0])
+                #print reqinfo
                 if reqinfo['method']=='POST' or reqinfo['method']=='PUT':
                     if reqheaders.has_key("transfer-encoding") and reqheaders['transfer-encoding']=="chunked":
                         cli_chunked=True
                         header_reviced=True 
                         if "0\r\n\r\n" in cli_chunked:
+                            #print "chunk end"
                             header_recived=False
-                    elif reqheaders['content-length']:
+                    elif reqheaders.has_key('content-length'):
                         cli_size=int(reqheaders['content-length'])
                         recived_size+=len(cliheader[1])
                         if(recived_size>=cli_size):
@@ -96,7 +100,7 @@ def handle_request(conn,addr,config):
                     if recived_size>=cli_size:
                         header_recived=False 
                 
-            print "recv:"+data
+            #print "recv:"+data
             connserver.send(data)
             if(header_recived):
                 continue 
@@ -106,30 +110,38 @@ def handle_request(conn,addr,config):
             res_chunked=False
             res_size=0
             res_recived_size=0
-            #print responce_headers
+            has_length=True
+            print "[+]server:%s:%s -> %s"%(config['remote_host'],config['remote_port'],message[0].split('\r\n')[0])
             if responce_headers.has_key('transfer-encoding') and responce_headers['transfer-encoding']=='chunked':
                 res_chunked=True
-            elif responce_headers['content-length']:
+            elif responce_headers.has_key('content-length'):
                 res_size=int(responce_headers['content-length'])
                 res_recived_size=len(message[1])
+            else:
+                has_length=False 
             while(True):
                 if res_chunked:
                     if '0\r\n\r\n' in data:
+                        #print "chunk end"
                         break
-                else:
+                elif has_length:
                     if res_recived_size>=res_size:
                         break 
+                else:
+                    if not len(data):
+                        break
                 conn.send(data)
                 data=connserver.recv(1024)
                 res_recived_size+=len(data)
                 #print res_recived_size
-                
+            #data=connserver.recv(1024)
             conn.send(data)
-            if responce_headers['connection']=='close':
+            if not responce_headers.has_key('connection') or responce_headers['connection']=='close':
+                #print "shutdown"
                 conn.shutdown(socket.SHUT_WR)
-            print "ended a transaction"
+            #print "ended a transaction"
     except Exception as ex:
-        print ex.message
+        print ex
     finally:
         conn.close()
         connserver.close()
