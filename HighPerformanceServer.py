@@ -40,8 +40,9 @@ def parse_client_header(header_chunk):
     lines=header_chunk.split('\r\n')
     headers={}
     for line in lines[1:]:
-        key,value=line.split(':',1)
-        headers[key.strip().lower()]=value.strip()
+        if line.strip() is not '':
+            key,value=line.split(':',1)
+            headers[key.strip().lower()]=value.strip()
     query_message=lines[0].split(' ')
     queryinfo={'method':query_message[0],'url':query_message[1],'version':query_message[2]}
     return queryinfo,headers
@@ -50,8 +51,9 @@ def parse_server_header(header_chunk):
     lines=header_chunk.split('\r\n')
     headers={}
     for line in lines[1:]:
-        key,value=line.split(':',1)
-        headers[key.strip().lower()]=value.strip()
+        if line.strip() is not '':
+            key,value=line.split(':',1)
+            headers[key.strip().lower()]=value.strip()
     responce_message=lines[0].split(' ')
     responce_info={'version':responce_message[0],'code':responce_message[1],'message':responce_message[2]}
     return responce_info,headers 
@@ -68,7 +70,7 @@ def handle_request(conn,addr,config):
         recived_size=0
         cli_chunked=False 
         while True:
-            data=conn.recv(1024)
+            data=conn.recv(20480)
             if not len(data):
                 #print "shutdown 1"
                 conn.shutdown(socket.SHUT_WR)
@@ -103,14 +105,23 @@ def handle_request(conn,addr,config):
                     if recived_size>=cli_size:
                         header_recived=False 
                 
-            #print "recv:"+data
+            print "recv:"+data
             connserver.send(data)
             if(header_recived):
-                continue 
-            data=connserver.recv(1024)
+                continue
+            print "2"
+            data=connserver.recv(20480)
+            if('\r\n' not in data):
+                data+=connserver.recv(20480)
+            print len(data),data
+            print "3"
             message=data.split('\r\n\r\n')
+            print message
+            print "4"
             responce_info,responce_headers=parse_server_header(message[0])
+            print "5"
             res_chunked=False
+            print "6"
             res_size=0
             res_recived_size=0
             has_length=True
@@ -134,10 +145,10 @@ def handle_request(conn,addr,config):
                     if not len(data):
                         break
                 conn.send(data)
-                data=connserver.recv(1024)
+                data=connserver.recv(20480)
                 res_recived_size+=len(data)
                 #print res_recived_size
-            #data=connserver.recv(1024)
+            #data=connserver.recv(20480)
             conn.send(data)
             if not responce_headers.has_key('connection') or responce_headers['connection']=='close':
                 #print "shutdown"
