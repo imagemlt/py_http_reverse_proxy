@@ -1,0 +1,6 @@
+{
+	"remote_host":"127.0.0.1",
+	"remote_port":80,
+	"listen_host":"127.0.0.1",
+	"listen_port":8001
+}
