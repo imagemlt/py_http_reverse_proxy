@@ -10,6 +10,7 @@ import socket
 import time
 import gevent
 import json
+import random
 from gevent import socket,monkey
 monkey.patch_all()
 import os
@@ -57,9 +58,11 @@ def parse_server_header(header_chunk):
 
 def handle_request(conn,addr,config):
     try:
+        choice=random.randint(0,len(config['remotes'])-1)
+        print config['remotes'],choice
         print "recived request from %s:%s"%(addr[0],addr[1])
         connserver=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        connserver.connect((config['remote_host'],config['remote_port']))
+        connserver.connect((config['remotes'][choice]["remote_host"],config["remotes"][choice]['remote_port']))
         header_recived=False 
         cli_size=0
         recived_size=0
@@ -111,7 +114,7 @@ def handle_request(conn,addr,config):
             res_size=0
             res_recived_size=0
             has_length=True
-            print "[+]server:%s:%s -> %s"%(config['remote_host'],config['remote_port'],message[0].split('\r\n')[0])
+            print "[+]server:%s:%s -> %s"%(config["remotes"][choice]['remote_host'],config["remotes"][choice]['remote_port'],message[0].split('\r\n')[0])
             if responce_headers.has_key('transfer-encoding') and responce_headers['transfer-encoding']=='chunked':
                 res_chunked=True
             elif responce_headers.has_key('content-length'):

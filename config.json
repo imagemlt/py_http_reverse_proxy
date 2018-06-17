@@ -1,6 +1,14 @@
 {
-	"remote_host":"127.0.0.1",
-	"remote_port":80,
+	"remotes":[
+		{
+			"remote_host":"xxx.xxx.xxx.xxx",
+			"remote_port":80
+		},
+		{
+			"remote_host":"xxx.xxx.xxx.xxx",
+			"remote_port":80
+		}
+	],
 	"listen_host":"127.0.0.1",
 	"listen_port":8001
 }
