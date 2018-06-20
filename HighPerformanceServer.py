@@ -60,11 +60,12 @@ def parse_server_header(header_chunk):
 
 def handle_request(conn,addr,config):
     try:
-        choice=random.randint(0,len(config['remotes'])-1)
+        chosen=False 
+        #choice=random.randint(0,len(config['remotes'])-1)
         #print config['remotes'],choice
         print "recived request from %s:%s"%(addr[0],addr[1])
         connserver=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        connserver.connect((config['remotes'][choice]["remote_host"],config["remotes"][choice]['remote_port']))
+        #connserver.connect((config['remotes'][choice]["remote_host"],config["remotes"][choice]['remote_port']))
         header_recived=False 
         cli_size=0
         recived_size=0
@@ -80,6 +81,15 @@ def handle_request(conn,addr,config):
                 if(len(cliheader)!=2):
                     break
                 reqinfo,reqheaders=parse_client_header(cliheader[0])
+                if not chosen:
+                    for serv in config['servers']:
+                        if serv['hostname']==reqheaders['host'].strip():
+                            break 
+                    print "server",serv
+                    #connserver=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                    choice=serv['proxy_pass'][random.randint(0,len(serv["proxy_pass"])-1)]
+                    connserver.connect((config['remotes'][choice]['remote_host'],config['remotes'][choice]['remote_port']))
+                    chosen=True
                 print "[+]client %s:%s -> %s"%(addr[0],addr[1],cliheader[0].split('\r\n')[0])
                 #print reqinfo
                 if reqinfo['method']=='POST' or reqinfo['method']=='PUT':
